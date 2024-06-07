@@ -1,6 +1,6 @@
 # OrderManager
 
-## Note: This project is not finished and still in progress
+## Note: This project is not finished and is still in progress
 
 I started creating a wpf program, which can communicate with a sql database to create, delete and change orders. In the database I implemented orders and processes, where any order can have several processes. Until now this program only interacts with orders.
 
