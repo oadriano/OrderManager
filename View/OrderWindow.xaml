@@ -346,10 +346,10 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Button Content="New Order" Grid.Row="1" Height="45" 
+            <Button Content="Clear" Grid.Row="1" Height="45" 
                     HorizontalAlignment="Stretch" VerticalAlignment="Top"
                     Margin="190,0,190,0" x:Name="btnNewOrder"
-                    Command="{Binding NewOrderCommand}" Grid.ColumnSpan="1"/>
+                    Command="{Binding ClearCommand}" Grid.ColumnSpan="1"/>
 
             <DataGrid x:Name="OrderGrid" Grid.Row="0" Margin="0,65,0,0" ItemsSource="{Binding CurrentOrderList}" 
                       ColumnWidth="*" HorizontalAlignment="Left" AutoGenerateColumns="True" AutoGeneratingColumn="AutoGenerateOrder" 
@@ -386,8 +386,8 @@
         <RadioButton GroupName="AuswahlListView" Content="SecondUser" HorizontalAlignment="Left" Margin="40,10,0,0" Grid.Row="1" VerticalAlignment="Top" Command="{Binding ShowSecondUserViewCommand}" Grid.Column="1"/>
 
         <Button Content="First" Grid.Row="2" Height="25" VerticalAlignment="Top"
-            Margin="280,20,80,0" x:Name="btnFirst"
-            Command="{Binding FirstPageCommand}" Grid.ColumnSpan="1" IsEnabled="{Binding ActivatedFooter}"/>
+            Margin="-125,20,485,0" x:Name="btnFirst"
+            Command="{Binding FirstPageCommand}" Grid.ColumnSpan="1" Grid.Column="1" IsEnabled="{Binding ActivatedFooter}"/>
 
         <Button Content="Prev" Grid.Row="2" Height="25" VerticalAlignment="Center"
             Margin="-55,20,415,0" x:Name="btnPrevious"
@@ -403,7 +403,7 @@
 
 
 
-        <ComboBox HorizontalAlignment="Left" Margin="200,20,0,0" Grid.Row="2" VerticalAlignment="Center" Width="50" Grid.ColumnSpan="1" x:Name="dropdownPageSizetxt" 
+        <ComboBox HorizontalAlignment="Left" Margin="150,20,0,0" Grid.Row="2" VerticalAlignment="Center" Width="50" Grid.ColumnSpan="1" x:Name="dropdownPageSizetxt" 
             ItemsSource ="{StaticResource PageSizeModel}" SelectedItem="{Binding SelectedPageSize, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="1" IsReadOnly="True" IsEnabled="{Binding ActivatedFooter}"/>
 
         <Label Content="Page: " HorizontalAlignment="right" Margin="0,20,-200,0" VerticalAlignment="Top" Grid.Row="2" Grid.ColumnSpan="1"/>

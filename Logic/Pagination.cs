@@ -4,6 +4,8 @@ using OrderManager.ConstValues;
 using System.Collections.ObjectModel;
 using Microsoft.IdentityModel.Tokens;
 using OrderManager.ViewModel;
+using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace OrderManager.Logic
 {
@@ -19,13 +21,15 @@ namespace OrderManager.Logic
         private int _tableSize;
         private int _savedStartIndex;
 
+        private string _lastSearchEntry;
+
         internal Pagination(OrderVM orderVM)
         {
             _orderVM = orderVM;
             _page = 1;
+            _savedPage = 1;
             _startIndex = 0;
-            _savedPage = _page;
-            _savedStartIndex = _startIndex;
+            _lastSearchEntry = "";
         }
 
         internal bool TryGetNextPage(out ObservableCollection<OrderModel> nextPage, bool jumpToLastPage = false, bool newEntry = false)
@@ -55,19 +59,20 @@ namespace OrderManager.Logic
                             throw new Exception("No query available");
                         }
                     }
+
                     else
                     {
-                        return false; // HIER IST DER FEHLER
+                        return false;
                     }
                 }
 
-                if (jumpToLastPage)
+                else if (jumpToLastPage)
                 {
-                    // Last Page is full and user didn't create an entry? -> Jump to that page.
-                    // When user creates a new entry and last page is already full, the last page is the next one with that entry
+                    // Last Page is full and user didn't create a new entry? -> Jump to that page.
+                    // When user creates a new entry and last page is already full, skip one page
                     if (_tableSize % _pageSize == 0 && !newEntry)
                     {
-                        _page = (_tableSize / _pageSize);
+                        _page = _tableSize / _pageSize;
                     }
 
                     else
@@ -131,42 +136,47 @@ namespace OrderManager.Logic
 
                 else
                 {
-                    throw new Exception("No query available");
+                    return false;
+                    // throw new Exception("No query available");
                 }
             }
         }
-        // TODO: BUG => REFRESHVIEW WIRD ZWEIMAL AUFGERUFEN
 
         internal ObservableCollection<OrderModel> RefreshView(string searchString = "", string selectedPageSize = "")
         {
+            // TODO: Wird schon übergeben, man braucht nicht mit _orderVM.Searchkey zuweisen
             searchString = (_orderVM.SearchKey == null) ? "" : _orderVM.SearchKey;
-            // TODO: BUG => Wenn ich suche, wird nicht auf die vorherige Seite aktualisiert, sondern auf Seite 1
 
             using (DataHandler _context = new DataHandler(new DBInitialization()))
             {
-                if (!searchString.IsNullOrEmpty())
-                {
+                _tableSize = _context.GetTableSize<OrderModel>();
+
+                // User starts to search something
+                if (searchString.Length > 0 && (_lastSearchEntry.Length == 0 || _lastSearchEntry == ""))
+                { 
                     _savedPage = _page;
                     _savedStartIndex = _startIndex;
-
                     _page = 1;
                     _startIndex = 0;
+
+                    _lastSearchEntry = searchString;                  
                 }
 
-                else if (_orderVM.ActivatedFooter)
-                {
-                    _page = 1;
-                    _startIndex = 0;
-                }
-
-                else if (!_orderVM.ActivatedFooter)
+                // User stops to search something
+                else if (searchString.Length == 0 && (_lastSearchEntry.Length > 0 || _lastSearchEntry != ""))
                 {
                     _page = _savedPage;
                     _startIndex = _savedStartIndex;
+
+                    _lastSearchEntry = "";
                 }
 
-
-                _tableSize = _context.GetTableSize<OrderModel>();
+                // User changes pagesize and is not searching something
+                else if (selectedPageSize != Convert.ToString(_pageSize) && searchString.IsNullOrEmpty() && _lastSearchEntry == searchString)
+                {
+                    _page = 1;
+                    _startIndex = 0;
+                }
 
                 // For first initialization there needs to be a selectedPageSize passed, otherwise take the public SelectedPageSize
                 if (selectedPageSize != "")
@@ -174,10 +184,11 @@ namespace OrderManager.Logic
                     _orderVM.SelectedPageSize = selectedPageSize;
                 }
 
+                // Parsing "all" as SelectedPageSize leads to else statement
                 if (int.TryParse(_orderVM.SelectedPageSize, out _pageSize)) { }
                 else
                 {
-                    _pageSize = 1000;
+                    _pageSize = ConstInts.MAXPAGESIZE;
                 }
 
                 // Last entry in page deleted? -> Go to previous page. TryGetPreviousPage is loading previous page
@@ -185,6 +196,22 @@ namespace OrderManager.Logic
                 {
                     return lastPage;
                 }
+
+                // More than one page was deleted (in search mode) -> jump to page 1
+                
+
+                // TODO: Implement a loop which goes back more than one site when whole sites have been deleted
+                /*else if (_tableSize <= (_page - 1) * _pageSize && TryGetPreviousPage(out ObservableCollection<OrderModel> _) != true)
+                {
+                    while (TryGetPreviousPage(out ObservableCollection<OrderModel> getPage) != true)
+                    {
+                        if (_page - 1 < 1)
+                        {
+                            break;
+                        }
+                    }
+                    return getPage;
+                }*/
 
                 List<OrderModel> query = _context.GetData<OrderModel>(a => a.VorgaengeInAuftrag.All(v => v.Vorgangsstatus != ConstStrings.VORGANGSSTATUS_ABGESCHLOSSEN) &&
                     (a.Auftragnummer.StartsWith(searchString) || Convert.ToString(a.AuftragID).StartsWith(searchString)),

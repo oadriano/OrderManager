@@ -31,7 +31,7 @@ namespace OrderManager.ViewModel
 
         //private bool _searchInitiatedPageSizeChange;
 
-        public RelayCommand NewOrderCommand { get; }
+        public RelayCommand ClearCommand { get; }
         public RelayCommand UpdateOrCreateOrderCommand { get; }
         public RelayCommand ShowMainOrderViewCommand { get; }
         public RelayCommand DeleteOrderCommand { get; }
@@ -90,8 +90,12 @@ namespace OrderManager.ViewModel
                 {
                     _selectedPageSize = value;
 
-                    CurrentOrderList = _pagination.RefreshView(SearchKey, _selectedPageSize);
-                    
+                    // Here I make sure, that _pagination.Refreshview() is not called twice in dispatcherTimer_Tick()
+                    if (_selectedPageSize != _savedPageSize && SearchKey.IsNullOrEmpty())
+                    {
+                        CurrentOrderList = _pagination.RefreshView(SearchKey, _selectedPageSize);
+                    }
+                                  
                     OnPropertyChanged(nameof(Page));
                     OnPropertyChanged();
                 }
@@ -206,7 +210,7 @@ namespace OrderManager.ViewModel
             DeleteOrderIsEnabled = false;
             ActivatedFooter = true;
 
-            NewOrderCommand = new RelayCommand(_ => NewOrder());
+            ClearCommand = new RelayCommand(_ => Clear());
             DeleteOrderCommand = new RelayCommand(_ => DeleteOrder());
             UpdateOrCreateOrderCommand = new RelayCommand(_ => UpdateOrCreateOrder());
             //ShowMainOrderViewCommand = new RelayCommand(_ => ExecDefaultView());
@@ -230,17 +234,21 @@ namespace OrderManager.ViewModel
             if (SearchKey.Length > 0 && ActivatedFooter)
             {
                 _savedPageSize = SelectedPageSize;
-                SelectedPageSize = "all";
+                if (SelectedPageSize != "all")
+                {
+                    SelectedPageSize = "all";
+                }
                 ActivatedFooter = false;
             }
 
-            else if (!ActivatedFooter)
+            else if (SearchKey.Length == 0 && !ActivatedFooter)
             {
                 SelectedPageSize = _savedPageSize;
+                _savedPageSize = null;
                 ActivatedFooter = true;
             }
 
-            //CurrentOrderList = _pagination.RefreshView(SearchKey, "all");
+            CurrentOrderList = _pagination.RefreshView(SearchKey, SelectedPageSize);
             OnPropertyChanged(nameof(Page));
 
             dispatcherTimer.Stop();
@@ -295,7 +303,7 @@ namespace OrderManager.ViewModel
             }
         }
 
-        private void NewOrder()
+        private void Clear()
         {
             SelectedGridItem = null;
             FocusMessenger.RequestFocus("txtOrderNumber");
@@ -333,6 +341,12 @@ namespace OrderManager.ViewModel
             {
                 CurrentOrderList = lastPage;
             }
+
+            else
+            {
+                throw new Exception("lastpage is null");
+            }
+
             OnPropertyChanged(nameof(Page));
 
             _currentOrder = null;
@@ -410,7 +424,16 @@ namespace OrderManager.ViewModel
                 MessageBox.Show("Please select an order.");
             }
 
-            CurrentOrderList = _pagination.RefreshView();
+            CurrentOrderList = _pagination.RefreshView("", _selectedPageSize);
+            /*if (_pagination.TryGetNextPage(out ObservableCollection<OrderModel> lastPage, true) && lastPage != null)
+            {
+                CurrentOrderList = lastPage;
+            }
+
+            else
+            {
+                throw new Exception("lastpage is null.");
+            }*/
 
             OnPropertyChanged(nameof(Page));
 

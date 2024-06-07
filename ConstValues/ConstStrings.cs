@@ -1,4 +1,4 @@
-﻿/// This class contains constant Strings for the Implementation in my project: OrderManager
+﻿/// This class contains constant Strings
 namespace OrderManager.ConstValues
 {
     public static class ConstStrings
